@@ -5,21 +5,32 @@ import debounce from 'lodash.debounce';
 
 type Props = {
   people: Person[];
-  onSelect: (person: Person | null) => void;
+  onSelected: (person: Person | null) => void;
+  delay?: number;
 };
 
-export const Autocomplete: FC<Props> = ({ people, onSelect }) => {
+export const Autocomplete: FC<Props> = ({
+  people,
+  onSelected,
+  delay = 300,
+}) => {
   const [query, setQuery] = useState('');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [appliedQuery, setAppliedQuery] = useState('');
 
   const applyQuery = useMemo(() => {
-    return debounce(setAppliedQuery, 300);
-  }, []);
+    return debounce(setAppliedQuery, delay);
+  }, [delay]);
 
   useEffect(() => {
     return () => applyQuery.cancel();
   }, [applyQuery]);
+
+  // useEffect(() => {
+  //   if (appliedQuery.trim().length === 0) {
+  //     setIsDropdownVisible(false);
+  //   }
+  // }, [appliedQuery]);
 
   const handleQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -27,8 +38,12 @@ export const Autocomplete: FC<Props> = ({ people, onSelect }) => {
   };
 
   const filteredPeople = useMemo(() => {
+    if (appliedQuery.trim().length === 0) {
+      return people;
+    }
+
     return people.filter(person =>
-      formatString(person.name).includes(appliedQuery),
+      formatString(person.name).includes(appliedQuery.toLowerCase()),
     );
   }, [appliedQuery, people]);
 
@@ -45,29 +60,31 @@ export const Autocomplete: FC<Props> = ({ people, onSelect }) => {
             onChange={handleQueryChange}
             onFocus={() => {
               setIsDropdownVisible(true);
-              onSelect(null);
+              onSelected(null);
             }}
           />
         </div>
 
-        <div className="dropdown-menu" role="menu" data-cy="suggestions-list">
-          <div className="dropdown-content">
-            {filteredPeople.map((person, index) => (
-              <div
-                key={index}
-                className="dropdown-item"
-                data-cy="suggestion-item"
-                onClick={() => {
-                  setIsDropdownVisible(false);
-                  setQuery('');
-                  onSelect(person);
-                }}
-              >
-                <p className="has-text-link">{person.name}</p>
-              </div>
-            ))}
+        {filteredPeople.length > 0 && (
+          <div className="dropdown-menu" role="menu" data-cy="suggestions-list">
+            <div className="dropdown-content">
+              {filteredPeople.map(person => (
+                <div
+                  key={person.slug}
+                  className="dropdown-item"
+                  data-cy="suggestion-item"
+                  onClick={() => {
+                    setIsDropdownVisible(false);
+                    setQuery('');
+                    onSelected(person);
+                  }}
+                >
+                  <p className="has-text-link">{person.name}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {filteredPeople.length === 0 && (

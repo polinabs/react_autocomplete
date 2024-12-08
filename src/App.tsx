@@ -25,7 +25,7 @@ export const App: FC = () => {
         )}
         <Autocomplete
           people={peopleFromServer}
-          onSelect={handleSelectedPerson}
+          onSelected={handleSelectedPerson}
         />
       </main>
     </div>
